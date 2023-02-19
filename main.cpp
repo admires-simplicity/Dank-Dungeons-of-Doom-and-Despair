@@ -145,32 +145,22 @@ void InitializeWindow(Vector2 screenSize) {
 
 void InitializeCamera(Camera2D &camera, Player &player, Vector2 screenSize) {
 	camera = { 0 };
-	//camera.target = (Vector2){ player.bounds.x, player.bounds.y } ;
 	camera.target = (Vector2){ 0, 0 };
-	//camera.offset = (Vector2){ screenSize.x/2.0f, screenSize.y/2.0f };
 	camera.target = (Vector2){ 0, 0 };
 	camera.rotation = 0.0f;
 	camera.zoom = 1.0f;
 }
-
-//void UpdateCamera(Camera2D &camera, Entity &player, Vector2 screenSize) {
-//    camera.offset = (Vector2){ screenSize.x/2.0f, screenSize.y/2.0f };
-//    camera.target = (Vector2){ player.bounds.x, player.bounds.y } ;
-//}
-
 int main() {
 	Vector2 screenSize = { 1200, 900 };
 	InitializeWindow(screenSize);
 
 	Player player;
-	//player.velocity.x = 10.0f;
-	player.bounds.x += 650;
+//	player.bounds.x += 650;
 
 	Camera2D camera;
 	InitializeCamera(camera, player, screenSize);
 
 	std::vector<dddd::Rectangle> level_walls { 
-		//(dddd::Rectangle){ 0, 100, 600, 100 },
 		dddd::Rectangle({ 0, 100, 600, 100 }),
 		dddd::Rectangle({ 700, 200, 500, 100 }),
 		dddd::Rectangle({ 0, 300, 1200, 100 }),
@@ -190,8 +180,6 @@ int main() {
 
 		player.UpdateBounds(level_walls);
 		DrawRectangleRec(player.bounds, player.color);
-
-		//UpdateCamera(camera, player, screenSize);
 
 		for (auto &r : level_walls) {
 			DrawRectangleRec(r, LIGHTGRAY);
