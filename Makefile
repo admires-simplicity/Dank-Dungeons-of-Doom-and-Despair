@@ -1,2 +1,2 @@
-main : main.o 
-	g++ main.cpp -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -o game -Wall -g
+main : 
+	g++ main.cpp -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -o game -Wall

@@ -69,11 +69,8 @@ public:
 		nextBounds.y += velocity.y*deltaTime;
 		velocity.y += G*deltaTime;
 
-		//bool vCollision { false };
-		//bool hCollision { false };
-
 		for (size_t i = 0; i < walls.size(); ++i) {
-			if (/*!vCollision &&*/ Colliding(nextBounds, walls[i])) {
+			if (Colliding(nextBounds, walls[i])) {
 				if (bounds.Above(walls[i])) {
 					onGround = true;
 					nextBounds.y = walls[i].y - bounds.height;
@@ -81,7 +78,6 @@ public:
 					nextBounds.y = walls[i].y + walls[i].height;
 				}
 				velocity.y = 0.0f;
-				//vCollision = true;
 				break;
 			}
 		}
@@ -94,20 +90,15 @@ public:
 		nextBounds.x += velocity.x*deltaTime;
 
 		for (size_t i = 0; i < walls.size(); ++i) {
-			if (/*!hCollision &&*/ Colliding(nextBounds, walls[i])) {
+			if (Colliding(nextBounds, walls[i])) {
 				if (bounds.Left() >= walls[i].Right()) nextBounds.x = walls[i].Right();
 				else                                   nextBounds.x = walls[i].Left() - bounds.width;
 				velocity.x = 0;
-				//hCollision = true;
 				break;
 			}
 		}
-		//if (!vCollision) onGround = false;
-		//bounds.y = nextBoundsY.y;
-		//bounds.x = nextBoundsX.x;
 
 		bounds = nextBounds;
-
 	}
 };
 
