@@ -86,7 +86,7 @@ public:
 			}
 		}
 
-		if (onGround && velocity.x != 0.0f) {
+		if (!moving && velocity.x != 0.0f) {
 			const float friction = 20.0f;
 			velocity.x += (velocity.x > 0.0f ? -1.0f : 1.0f) * friction;
 		}
