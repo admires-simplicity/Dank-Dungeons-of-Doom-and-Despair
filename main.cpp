@@ -22,9 +22,19 @@ namespace dddd {
 		int Top() {
 			return y;
 		}
+
 		int Bottom() {
 			return y + height;
 		}
+
+		int Left() {
+			return x;
+		}
+
+		int Right() {
+			return x + width;
+		}
+
 		bool Above(Rectangle r) {
 			return Bottom() <= r.Top();
 		}
@@ -51,38 +61,50 @@ public:
 		onGround(0)
 		{}
 
-	//void UpdateBounds(std::vector<Rectangle> &walls) {
 	void UpdateBounds(std::vector<dddd::Rectangle> &walls) {
 		float deltaTime = GetFrameTime();
 
-		//bool verticalCollision = false;
+		dddd::Rectangle nextBoundsY { bounds };
+		dddd::Rectangle nextBoundsX { bounds };
 
-		Rectangle nextBounds { bounds };
 
-		nextBounds.y += velocity.y*deltaTime;
+		nextBoundsY.y += velocity.y*deltaTime;
 		velocity.y += G*deltaTime;
 
-		for (size_t i = 0; i < walls.size(); ++i) {
-			//if (i == 0) std::cout << bounds.Above(walls[i]) << '\n';
-			if (Colliding(nextBounds, walls[i]) && bounds.Above(walls[i])) {
-			//if (Colliding(nextBounds, walls[i])) {
-				//should this be a virtual function call for a HitGround function?
-				//verticalCollision = true;
-				onGround = true;
-				velocity.y = 0.0f;
-				nextBounds.y = walls[i].y - bounds.height;
-				break;
-			}
-		}
-		bounds = nextBounds;
 
 		if (onGround && velocity.x != 0.0f) {
-			//if (abs(velocity.x) < 2.0f) velocity.x = 0.0f;
-			const float friction = 10.0f;
+			const float friction = 20.0f;
 			velocity.x += (velocity.x > 0.0f ? -1.0f : 1.0f) * friction;
 		}
-		bounds.x += velocity.x*deltaTime;
+		nextBoundsX.x += velocity.x*deltaTime;
 
+		bool vCollision { false };
+		bool hCollision { false };
+
+		for (size_t i = 0; i < walls.size(); ++i) {
+			if (!vCollision && Colliding(nextBoundsY, walls[i])) {
+				if (bounds.Above(walls[i])) {
+					onGround = true;
+					nextBoundsY.y = walls[i].y - bounds.height;
+				} else {
+					nextBoundsY.y = walls[i].y + walls[i].height;
+				}
+				velocity.y = 0.0f;
+				vCollision = true;
+			}
+			//slightly worried about updating these without checking whether the other is updated first...
+			//idk if it will cause bugs
+			if (!hCollision && Colliding(nextBoundsX, walls[i])) {
+				if (bounds.Left() >= walls[i].Right()) nextBoundsX.x = walls[i].Right();
+				else                                   nextBoundsX.x = walls[i].Left() - bounds.width;
+				velocity.x = 0;
+				hCollision = true;
+			}
+			if (vCollision && hCollision) break;
+		}
+		if (!vCollision) onGround = false;
+		bounds.y = nextBoundsY.y;
+		bounds.x = nextBoundsX.x;
 
 	}
 };
@@ -149,6 +171,7 @@ int main() {
 
 	Player player;
 	//player.velocity.x = 10.0f;
+	player.bounds.x += 650;
 
 	Camera2D camera;
 	InitializeCamera(camera, player, screenSize);
