@@ -64,47 +64,49 @@ public:
 	void UpdateBounds(std::vector<dddd::Rectangle> &walls) {
 		float deltaTime = GetFrameTime();
 
-		dddd::Rectangle nextBoundsY { bounds };
-		dddd::Rectangle nextBoundsX { bounds };
+		dddd::Rectangle nextBounds { bounds };
 
-
-		nextBoundsY.y += velocity.y*deltaTime;
+		nextBounds.y += velocity.y*deltaTime;
 		velocity.y += G*deltaTime;
 
+		//bool vCollision { false };
+		//bool hCollision { false };
+
+		for (size_t i = 0; i < walls.size(); ++i) {
+			if (/*!vCollision &&*/ Colliding(nextBounds, walls[i])) {
+				if (bounds.Above(walls[i])) {
+					onGround = true;
+					nextBounds.y = walls[i].y - bounds.height;
+				} else {
+					nextBounds.y = walls[i].y + walls[i].height;
+				}
+				velocity.y = 0.0f;
+				//vCollision = true;
+				break;
+			}
+		}
 
 		if (onGround && velocity.x != 0.0f) {
 			const float friction = 20.0f;
 			velocity.x += (velocity.x > 0.0f ? -1.0f : 1.0f) * friction;
 		}
-		nextBoundsX.x += velocity.x*deltaTime;
 
-		bool vCollision { false };
-		bool hCollision { false };
+		nextBounds.x += velocity.x*deltaTime;
 
 		for (size_t i = 0; i < walls.size(); ++i) {
-			if (!vCollision && Colliding(nextBoundsY, walls[i])) {
-				if (bounds.Above(walls[i])) {
-					onGround = true;
-					nextBoundsY.y = walls[i].y - bounds.height;
-				} else {
-					nextBoundsY.y = walls[i].y + walls[i].height;
-				}
-				velocity.y = 0.0f;
-				vCollision = true;
-			}
-			//slightly worried about updating these without checking whether the other is updated first...
-			//idk if it will cause bugs
-			if (!hCollision && Colliding(nextBoundsX, walls[i])) {
-				if (bounds.Left() >= walls[i].Right()) nextBoundsX.x = walls[i].Right();
-				else                                   nextBoundsX.x = walls[i].Left() - bounds.width;
+			if (/*!hCollision &&*/ Colliding(nextBounds, walls[i])) {
+				if (bounds.Left() >= walls[i].Right()) nextBounds.x = walls[i].Right();
+				else                                   nextBounds.x = walls[i].Left() - bounds.width;
 				velocity.x = 0;
-				hCollision = true;
+				//hCollision = true;
+				break;
 			}
-			if (vCollision && hCollision) break;
 		}
-		if (!vCollision) onGround = false;
-		bounds.y = nextBoundsY.y;
-		bounds.x = nextBoundsX.x;
+		//if (!vCollision) onGround = false;
+		//bounds.y = nextBoundsY.y;
+		//bounds.x = nextBoundsX.x;
+
+		bounds = nextBounds;
 
 	}
 };
