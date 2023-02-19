@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 
 #include <raylib.h>
@@ -14,24 +15,47 @@ bool Colliding(Rectangle &a, Rectangle &b) {
 	else return false;
 }
 
+
+namespace dddd {
+	class Rectangle : public ::Rectangle {
+	public:
+		int Top() {
+			return y;
+		}
+		int Bottom() {
+			return y + height;
+		}
+		bool Above(Rectangle r) {
+			return Bottom() <= r.Top();
+		}
+
+		Rectangle(::Rectangle r) : ::Rectangle(r) {}
+	};
+
+}
+
 class Entity {
 public:
-	Rectangle bounds;
+	dddd::Rectangle bounds;
 	Vector2 velocity;
-	float maxSpeed = 10.0f;
+	float maxSpeed = 200.0f;
 	Color color;
+	bool moving;
+	bool onGround;
 
 	Entity(Rectangle b, Color c) :
 		bounds(b),
 		velocity({ 0.0f, 0.0f }),
-		color(c)
+		color(c),
+		moving(0),
+		onGround(0)
 		{}
 
-	void UpdateBounds(std::vector<Rectangle> &walls) {
+	//void UpdateBounds(std::vector<Rectangle> &walls) {
+	void UpdateBounds(std::vector<dddd::Rectangle> &walls) {
 		float deltaTime = GetFrameTime();
 
 		//bool verticalCollision = false;
-		bool hitGround = false;
 
 		Rectangle nextBounds { bounds };
 
@@ -39,10 +63,12 @@ public:
 		velocity.y += G*deltaTime;
 
 		for (size_t i = 0; i < walls.size(); ++i) {
-			if (Colliding(nextBounds, walls[i])) {
+			//if (i == 0) std::cout << bounds.Above(walls[i]) << '\n';
+			if (Colliding(nextBounds, walls[i]) && bounds.Above(walls[i])) {
+			//if (Colliding(nextBounds, walls[i])) {
 				//should this be a virtual function call for a HitGround function?
 				//verticalCollision = true;
-				hitGround = true;
+				onGround = true;
 				velocity.y = 0.0f;
 				nextBounds.y = walls[i].y - bounds.height;
 				break;
@@ -50,12 +76,12 @@ public:
 		}
 		bounds = nextBounds;
 
-		if (hitGround && velocity.x != 0.0f) {
+		if (onGround && velocity.x != 0.0f) {
 			//if (abs(velocity.x) < 2.0f) velocity.x = 0.0f;
-			//else velocity.x += (velocity.x > 0.0f ? -1.0f : 1.0f) * friction;
-			velocity.x += (velocity.x > 0.0f ? -1.0f : 1.0f) * 1.0f;
+			const float friction = 10.0f;
+			velocity.x += (velocity.x > 0.0f ? -1.0f : 1.0f) * friction;
 		}
-		bounds.x += velocity.x;
+		bounds.x += velocity.x*deltaTime;
 
 
 	}
@@ -73,6 +99,29 @@ public:
 	Player(float x, float y) : 
 		Entity( { x, y, PLAYER_WIDTH, PLAYER_HEIGHT }, PLAYER_COLOR )
 		{}
+
+	void Move() {
+		std::cout << "player.velocity.x = " << velocity.x << '\n';
+		if (IsKeyDown(KEY_SPACE) && onGround) {
+#define PLAYER_JUMP_SPD	325.0f
+			velocity.y = -PLAYER_JUMP_SPD;
+			onGround = false;
+		}
+		const float hAccel = 30.0f;
+		if (IsKeyDown(KEY_LEFT)) {
+			moving = true;
+			if (velocity.x - hAccel > -maxSpeed) velocity.x -= hAccel;
+			else                                      velocity.x = -maxSpeed;
+		}
+		if (IsKeyDown(KEY_RIGHT)) {
+			moving = true;
+			if (velocity.x + hAccel < maxSpeed) velocity.x += hAccel;
+			else                                     velocity.x = maxSpeed;
+		}
+		if (IsKeyReleased(KEY_RIGHT) || IsKeyReleased(KEY_LEFT)) {
+			moving = false;
+		}
+	}
 };
 
 void InitializeWindow(Vector2 screenSize) {
@@ -81,11 +130,18 @@ void InitializeWindow(Vector2 screenSize) {
 
 void InitializeCamera(Camera2D &camera, Player &player, Vector2 screenSize) {
 	camera = { 0 };
-	camera.target = (Vector2){ player.bounds.x, player.bounds.y } ;
-	camera.offset = (Vector2){ screenSize.x/2.0f, screenSize.y/2.0f };
+	//camera.target = (Vector2){ player.bounds.x, player.bounds.y } ;
+	camera.target = (Vector2){ 0, 0 };
+	//camera.offset = (Vector2){ screenSize.x/2.0f, screenSize.y/2.0f };
+	camera.target = (Vector2){ 0, 0 };
 	camera.rotation = 0.0f;
 	camera.zoom = 1.0f;
 }
+
+//void UpdateCamera(Camera2D &camera, Entity &player, Vector2 screenSize) {
+//    camera.offset = (Vector2){ screenSize.x/2.0f, screenSize.y/2.0f };
+//    camera.target = (Vector2){ player.bounds.x, player.bounds.y } ;
+//}
 
 int main() {
 	Vector2 screenSize = { 1200, 900 };
@@ -97,8 +153,11 @@ int main() {
 	Camera2D camera;
 	InitializeCamera(camera, player, screenSize);
 
-	std::vector<Rectangle> level_walls { 
-		{ 0, 100, 600, 100 },
+	std::vector<dddd::Rectangle> level_walls { 
+		//(dddd::Rectangle){ 0, 100, 600, 100 },
+		dddd::Rectangle({ 0, 100, 600, 100 }),
+		dddd::Rectangle({ 700, 200, 500, 100 }),
+		dddd::Rectangle({ 0, 300, 1200, 100 }),
 	};
 
 	SetTargetFPS(60);
@@ -109,18 +168,14 @@ int main() {
 		BeginMode2D(camera);
 
 
-		if (IsKeyDown(KEY_LEFT)) {
-			if (player.velocity.x > -player.maxSpeed) player.velocity.x -= 2.0f;
-			else                                      player.velocity.x = -player.maxSpeed;
-		}
-		if (IsKeyDown(KEY_RIGHT)) {
-			if (player.velocity.x < player.maxSpeed) player.velocity.x += 2.0f;
-			else                                     player.velocity.x = player.maxSpeed;
-		}
 
+
+		player.Move();
 
 		player.UpdateBounds(level_walls);
 		DrawRectangleRec(player.bounds, player.color);
+
+		//UpdateCamera(camera, player, screenSize);
 
 		for (auto &r : level_walls) {
 			DrawRectangleRec(r, LIGHTGRAY);
