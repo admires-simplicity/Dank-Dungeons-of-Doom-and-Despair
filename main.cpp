@@ -158,6 +158,7 @@ int main() {
 
 	Player player;
 //	player.bounds.x += 650;
+	player.bounds.x += 10;
 
 	Camera2D camera;
 	InitializeCamera(camera, player, screenSize);
@@ -165,7 +166,15 @@ int main() {
 	std::vector<dddd::Rectangle> level_walls { 
 		dddd::Rectangle({ 0, 100, 600, 100 }),
 		dddd::Rectangle({ 700, 200, 500, 100 }),
-		dddd::Rectangle({ 0, 300, 1200, 100 }),
+		//dddd::Rectangle({ 0, 300, 1200, 100 }),
+
+		//floor
+		dddd::Rectangle({ 0, 800, 1200, 100 }),
+		//walls
+		dddd::Rectangle({ 0, 0, 1200, 5 }),
+		dddd::Rectangle({ 0, 0, 5, 900 }),
+		dddd::Rectangle({ 0, 895, 1200, 5 }),
+		dddd::Rectangle({ 1195, 0, 5, 900 }),
 	};
 
 	SetTargetFPS(60);
