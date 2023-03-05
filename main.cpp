@@ -148,10 +148,12 @@ void InitializeCamera(Camera2D &camera, Player &player, Vector2 screenSize) {
 	camera.target = (Vector2){ 0, 0 };
 	camera.target = (Vector2){ 0, 0 };
 	camera.rotation = 0.0f;
-	camera.zoom = 1.0f;
+	//camera.zoom = 1.0f;
+	camera.zoom = 2.0f/3.0f;
 }
 int main() {
-	Vector2 screenSize = { 1200, 900 };
+	//Vector2 screenSize = { 1200, 900 };
+	Vector2 screenSize = { 800, 600 };
 	InitializeWindow(screenSize);
 
 	Player player;
