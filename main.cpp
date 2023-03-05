@@ -44,6 +44,10 @@ namespace dddd {
 
 }
 
+typedef enum {
+  LEFT, RIGHT
+} directions;
+
 class Entity {
 public:
 	dddd::Rectangle bounds;
@@ -52,13 +56,15 @@ public:
 	Color color;
 	bool moving;
 	bool onGround;
+	int direction;
 
 	Entity(Rectangle b, Color c) :
 		bounds(b),
 		velocity({ 0.0f, 0.0f }),
 		color(c),
 		moving(0),
-		onGround(0)
+		onGround(0),
+		direction(directions::LEFT)
 		{}
 
 	void UpdateBounds(std::vector<dddd::Rectangle> &walls) {
@@ -103,39 +109,89 @@ public:
 };
 
 class Player : public Entity {
+public:
+	bool attacking;
+	int aframes;
+	dddd::Rectangle weaponBounds;
+
 #define PLAYER_WIDTH	20
 #define PLAYER_HEIGHT	60
 #define PLAYER_COLOR	WHITE
-public:
 	Player() :
-		Entity( { 0, 0, PLAYER_WIDTH, PLAYER_HEIGHT }, PLAYER_COLOR )
+		Entity( { 0, 0, PLAYER_WIDTH, PLAYER_HEIGHT }, PLAYER_COLOR ),
+		attacking(false),
+		aframes(0),
+		weaponBounds({0,0,0,0})
 		{}
 
 	Player(float x, float y) : 
-		Entity( { x, y, PLAYER_WIDTH, PLAYER_HEIGHT }, PLAYER_COLOR )
+		Entity( { x, y, PLAYER_WIDTH, PLAYER_HEIGHT }, PLAYER_COLOR ),
+		attacking(false),
+		aframes(0),
+		weaponBounds({0,0,0,0})
 		{}
 
+	void initiateAttack() {
+		if (!aframes) {
+			aframes = 15;
+			attacking = true;
+		}
+	}
+
 	void Move() {
-		std::cout << "player.velocity.x = " << velocity.x << '\n';
+		//std::cout << "player.velocity.x = " << velocity.x << '\n';
 		if (IsKeyDown(KEY_SPACE) && onGround) {
 #define PLAYER_JUMP_SPD	325.0f
 			velocity.y = -PLAYER_JUMP_SPD;
 			onGround = false;
 		}
 		const float hAccel = 30.0f;
-		if (IsKeyDown(KEY_LEFT)) {
+		if (IsKeyDown(KEY_A)) {
 			moving = true;
+			if (!attacking) direction = directions::LEFT;
+			//std::cout << directions::LEFT << '\n';
 			if (velocity.x - hAccel > -maxSpeed) velocity.x -= hAccel;
 			else                                      velocity.x = -maxSpeed;
 		}
-		if (IsKeyDown(KEY_RIGHT)) {
+		if (IsKeyDown(KEY_D)) {
 			moving = true;
+			if (!attacking) direction = directions::RIGHT;
+			//std::cout << directions::RIGHT << '\n';
 			if (velocity.x + hAccel < maxSpeed) velocity.x += hAccel;
 			else                                     velocity.x = maxSpeed;
 		}
-		if (IsKeyReleased(KEY_RIGHT) || IsKeyReleased(KEY_LEFT)) {
+		if (IsKeyReleased(KEY_A) || IsKeyReleased(KEY_D)) {
 			moving = false;
 		}
+		if (IsKeyPressed(KEY_J)) {
+			initiateAttack();
+		}
+
+	}
+
+	void Update() {
+		if (aframes) {
+			--aframes;
+			weaponBounds = bounds;
+			weaponBounds.height = 5.0f;
+			weaponBounds.width = 50.0f;
+			weaponBounds.y += 25.0f;
+			if (direction == directions::LEFT) weaponBounds.x -= weaponBounds.width;
+			if (direction == directions::RIGHT) weaponBounds.x += bounds.width;
+		}
+	}
+
+	void DrawWeapon() {
+		dddd::Rectangle hilt = weaponBounds;
+		hilt.width = 5.0f;
+		hilt.height = 25.0f;
+		hilt.y -= 10.0f;
+		//maybe I can combine this with Update directional code...
+		if (direction == directions::LEFT) hilt.x += weaponBounds.width - 15.0f;
+		if (direction == directions::RIGHT) hilt.x += 10.0f;
+		DrawRectangleRec(weaponBounds, GREEN);
+		DrawRectangleRec(hilt, GREEN);
+		std::cout << "Drawing~!\n";
 	}
 };
 
@@ -188,9 +244,16 @@ int main() {
 
 
 		player.Move();
-
 		player.UpdateBounds(level_walls);
+		player.Update();
 		DrawRectangleRec(player.bounds, player.color);
+
+		
+		if (player.aframes) player.DrawWeapon();
+		else {
+			player.attacking = false;
+			player.weaponBounds = dddd::Rectangle({0,0,0,0});
+		}
 
 		for (auto &r : level_walls) {
 			DrawRectangleRec(r, LIGHTGRAY);
