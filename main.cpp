@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #include <raylib.h>
 #include <raymath.h>
@@ -8,13 +9,12 @@
 
 bool Colliding(Rectangle &a, Rectangle &b) {
 	if (b.x + b.width > a.x &&
-            b.y + b.height > a.y &&
+      b.y + b.height > a.y &&
 	    a.x + a.width > b.x &&
 	    a.y + a.height > b.y)
 		return true;
 	else return false;
 }
-
 
 namespace dddd {
 	class Rectangle : public ::Rectangle {
@@ -144,6 +144,7 @@ public:
 #define PLAYER_JUMP_SPD	325.0f
 			velocity.y = -PLAYER_JUMP_SPD;
 			onGround = false;
+#undef PLAYER_JUMP_SPD
 		}
 		const float hAccel = 30.0f;
 		if (IsKeyDown(KEY_A)) {
@@ -151,14 +152,14 @@ public:
 			if (!attacking) direction = directions::LEFT;
 			//std::cout << directions::LEFT << '\n';
 			if (velocity.x - hAccel > -maxSpeed) velocity.x -= hAccel;
-			else                                      velocity.x = -maxSpeed;
+			else                                 velocity.x  = -maxSpeed;
 		}
 		if (IsKeyDown(KEY_D)) {
 			moving = true;
 			if (!attacking) direction = directions::RIGHT;
 			//std::cout << directions::RIGHT << '\n';
 			if (velocity.x + hAccel < maxSpeed) velocity.x += hAccel;
-			else                                     velocity.x = maxSpeed;
+			else                                velocity.x  = maxSpeed;
 		}
 		if (IsKeyReleased(KEY_A) || IsKeyReleased(KEY_D)) {
 			moving = false;
@@ -195,6 +196,18 @@ public:
 	}
 };
 
+class Monster : public Entity {
+public:
+	bool alive;
+
+	Monster(float x, float y) : 
+		Entity( { x, y, PLAYER_WIDTH, PLAYER_HEIGHT }, RED ),
+		alive(true)
+		{}
+
+private:
+};
+
 void InitializeWindow(Vector2 screenSize) {
 	InitWindow(screenSize.x, screenSize.y, "FUN -- ?");
 }
@@ -207,6 +220,7 @@ void InitializeCamera(Camera2D &camera, Player &player, Vector2 screenSize) {
 	//camera.zoom = 1.0f;
 	camera.zoom = 2.0f/3.0f;
 }
+
 int main() {
 	//Vector2 screenSize = { 1200, 900 };
 	Vector2 screenSize = { 800, 600 };
@@ -233,6 +247,11 @@ int main() {
 		dddd::Rectangle({ 1195, 0, 5, 900 }),
 	};
 
+
+	std::vector<Monster> monsters {
+		Monster(500, 40),
+	};
+
 	SetTargetFPS(60);
 
 	while (!WindowShouldClose()) {
@@ -242,14 +261,26 @@ int main() {
 
 
 
-
 		player.Move();
 		player.UpdateBounds(level_walls);
 		player.Update();
 		DrawRectangleRec(player.bounds, player.color);
 
+
+		bool monstersDied;
 		
-		if (player.aframes) player.DrawWeapon();
+		if (player.aframes) {
+			player.DrawWeapon();
+			for (auto &m : monsters) {
+				if (Colliding(player.weaponBounds, m.bounds)) {
+					//m.color = PINK;
+					std::cout << "hit monster at " << m.bounds.x << ',' << m.bounds.y << '\n';
+					m.alive = false;
+
+					monstersDied = true;
+				}
+			}
+		}
 		else {
 			player.attacking = false;
 			player.weaponBounds = dddd::Rectangle({0,0,0,0});
@@ -257,6 +288,20 @@ int main() {
 
 		for (auto &r : level_walls) {
 			DrawRectangleRec(r, LIGHTGRAY);
+		}
+
+
+		if (monstersDied) {
+			//erase all monsters that are not alive
+			monsters.erase(std::remove_if(monsters.begin(), monsters.end(),
+				[](Monster m) {
+					return !m.alive;
+				}
+			), monsters.end());
+		}
+
+		for (auto &m : monsters) {
+			DrawRectangleRec(m.bounds, m.color);
 		}
 
 		EndMode2D();
